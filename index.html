@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Assiette</title>
+<meta name="description" content="Journal alimentaire et compteur de calories avec estimation par photo.">
+<meta name="theme-color" content="#F2F4F8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1220" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Assiette">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..650&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app" id="app"></div>
+<nav class="tabbar" aria-label="Navigation"><div class="tabbar-in" id="tabs"></div></nav>
+<div id="sheet"></div>
+<div id="toast" aria-live="polite"></div>
+<input type="file" id="photo" class="vh" accept="image/*" tabindex="-1">
+<input type="file" id="cam" class="vh" accept="image/*" capture="environment" tabindex="-1">
+<input type="file" id="imp" class="vh" accept="application/json,.json" tabindex="-1">
+<script src="app.js"></script>
+</body>
+</html>
