@@ -1,6 +1,6 @@
 /* Assiette service worker: keeps the app usable offline. Bump CACHE when you change any file. */
-var CACHE = 'assiette-v1';
-var SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+var CACHE = 'assiette-v2';
+var SHELL = ['./', 'index.html', 'styles.css', 'app.js', 'recipes-data.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
