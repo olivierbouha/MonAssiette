@@ -106,7 +106,7 @@ h2{font:700 20px/1.2 var(--display);margin:0;text-wrap:balance}
 
 /* tab bar */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.tabbar-in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr) auto;gap:6px;align-items:center}
+.tabbar-in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr) auto;gap:6px;align-items:center}
 .tab{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;font-size:12px;font-weight:600;color:var(--muted)}
 .tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tab[aria-current="page"]{color:var(--ink)}
@@ -192,3 +192,38 @@ html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 .hint a{color:var(--accent);font-weight:600}
 
 .sheet>*{flex-shrink:0}
+
+/* recettes, menu de la semaine, modification d'un repas */
+.sub{font-size:13px;color:var(--muted);margin:-6px 0 0}
+.acts{display:flex;gap:20px;flex-wrap:wrap}
+.link.alt{color:var(--accent)}
+.btn.lbl{display:block;text-align:center;cursor:pointer}
+.reana{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:12px}
+.ir{display:grid;grid-template-columns:1fr auto 44px;gap:10px;align-items:center;padding:10px 12px;border-top:1px solid var(--line)}
+.ir:first-child{border-top:0}
+.ir .nm{min-width:0;overflow-wrap:anywhere}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.badge{display:inline-block;font-size:12px;font-weight:650;padding:2px 9px;border-radius:999px;border:1px solid var(--p);color:var(--ink);margin-top:5px}
+.rsearch{display:flex;flex-direction:column;gap:12px;margin:14px 0 18px}
+.rc{width:100%;border:0;background:none;text-align:left;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:13px 14px;border-top:1px solid var(--line)}
+.rc:first-child{border-top:0}
+.rc-t{min-width:0}
+.rc .n{font-weight:600;line-height:1.25;overflow-wrap:anywhere}
+.rc .k{font-size:12px;color:var(--muted)}
+.rc .m{font-size:12px;color:var(--muted);margin-top:2px}
+.wk-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:16px 0 12px}
+.wk-nav b{font:700 16px/1.2 var(--display);text-align:center}
+.wk-sum{font-size:13px;color:var(--muted);margin:0 0 14px}
+.mday{background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:10px}
+.mday.today{border-color:var(--accent)}
+.mday-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:12px 14px 8px}
+.mday-h b{font:700 16px/1.2 var(--display)}
+.mday-h span{font-size:12px;color:var(--muted)}
+.mday>.bar{margin:0 14px 6px}
+.ment{display:grid;grid-template-columns:34px 1fr auto 34px;gap:10px;align-items:center;padding:9px 14px;border-top:1px solid var(--line)}
+.chk{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);background:none;display:grid;place-items:center;color:var(--accent-ink);padding:0}
+.chk svg{width:16px;height:16px;stroke:currentColor;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.chk[aria-pressed="true"]{background:var(--ok);border-color:var(--ok)}
+.chk[aria-pressed="true"] svg{opacity:1}
+.madd{width:100%;border:0;border-top:1px solid var(--line);background:none;text-align:left;padding:11px 14px;color:var(--accent);font-weight:650}
+.tab{min-width:0}
