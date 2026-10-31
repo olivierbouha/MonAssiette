@@ -172,7 +172,7 @@ function mealRow(m){
       (demo()?'':'<div class="acts"><button class="link alt" data-act="edit-meal" data-id="'+esc(m.id)+'">Modifier ou réanalyser</button><button class="link" data-act="del" data-id="'+esc(m.id)+'">Supprimer</button></div>')+'</div>';
   }
   return '<div class="meal"><button class="meal-b" data-act="toggle" data-id="'+esc(m.id)+'" aria-expanded="'+open+'"><div class="thumb">'+th+'</div>'+
-    '<div class="meal-t"><div class="k">'+esc(m.type)+' · '+esc(m.t)+'</div><div class="n">'+esc(m.name)+'</div><div class="m num">P '+nf(m.p)+' · G '+nf(m.c)+' · L '+nf(m.f)+'</div></div>'+
+    '<div class="meal-t"><div class="k">'+esc(m.type)+' · '+esc(m.t)+(m.sh>1?' · part 1/'+m.sh:'')+'</div><div class="n">'+esc(m.name)+'</div><div class="m num">P '+nf(m.p)+' · G '+nf(m.c)+' · L '+nf(m.f)+'</div></div>'+
     '<div class="meal-k num">'+nf(m.kcal)+'<small>kcal</small></div></button>'+det+'</div>';
 }
 
@@ -238,7 +238,7 @@ function viewMenu(){
 }
 function entryRow(e,k){
   return '<div class="ment"><button class="chk" data-act="m-eat" data-k="'+k+'" data-id="'+esc(e.id)+'" aria-pressed="'+(!!e.done)+'" aria-label="'+(e.done?'Retirer du journal : ':'Marquer comme mangé : ')+esc(e.name)+'"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>'+
-    '<div class="meal-t"><div class="k">'+esc(e.type)+(e.done?' · au journal':'')+'</div><div class="n">'+esc(e.name)+'</div><div class="m num">P '+nf(e.p)+' · G '+nf(e.c)+' · L '+nf(e.f)+'</div></div>'+
+    '<button class="meal-t ment-open" data-act="m-open" data-k="'+k+'" data-id="'+esc(e.id)+'" aria-label="Voir et modifier : '+esc(e.name)+'"><div class="k">'+esc(e.type)+(e.ppl>1?' · '+e.ppl+' pers.':'')+(e.done?' · au journal':'')+'</div><div class="n">'+esc(e.name)+'</div><div class="m num">P '+nf(e.p)+' · G '+nf(e.c)+' · L '+nf(e.f)+(e.items&&e.items.length?' · '+e.items.length+' ingr.':'')+'</div></button>'+
     '<div class="meal-k num">'+nf(e.kcal)+'<small>kcal</small></div>'+
     '<button class="x" data-act="m-del" data-k="'+k+'" data-id="'+esc(e.id)+'" aria-label="Retirer du menu : '+esc(e.name)+'">'+IC.x+'</button></div>';
 }
@@ -258,6 +258,8 @@ function weekHtml(){
     '<p class="wk-sum">Aucun repas prévu cette semaine. Ajoutez-en jour par jour ou générez la semaine avec l’IA.</p>';
   return '<div class="wk-nav"><button class="x" data-act="wk" data-v="-1" aria-label="Semaine précédente">'+IC.prev+'</button><b>'+esc(a)+' – '+esc(b)+(ui.week===weekStart(TODAY)?' · cette semaine':'')+'</b><button class="x" data-act="wk" data-v="1" aria-label="Semaine suivante">'+IC.next+'</button></div>'+
     '<div class="row2" style="margin-bottom:12px">'+(aiReady()?'<button class="btn" data-act="mgen-open">Générer avec l’IA</button>':'<button class="btn" data-act="goto-ai">Activer l’IA</button>')+'<button class="btn alt" data-act="mclear">Vider la semaine</button></div>'+
+    '<div class="row2" style="margin-bottom:6px"><button class="btn alt" data-act="shop-open">Liste de courses</button><button class="btn alt" data-act="mshare-open">Partager le menu</button></div>'+
+    '<div class="acts" style="margin-bottom:10px"><button class="link alt" data-act="import-click">Importer un menu reçu</button></div>'+
     sum+days;
 }
 var RFILTERS=[['all','Toutes'],['prot','Riches en protéines'],['light','Légères'],['fast','Rapides'],['veg','Végétariennes'],['mine','Mes recettes']];
@@ -561,11 +563,11 @@ async function saveAiCfg(){
 }
 var isNative=function(){return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())};
 var nativeShare=null;
-async function shareNative(name,text){
+async function shareNative(name,text,label){
   var C=window.Capacitor;
   if(!nativeShare)nativeShare={fs:C.registerPlugin('Filesystem'),share:C.registerPlugin('Share')};
   var w=await nativeShare.fs.writeFile({path:name,data:text,directory:'CACHE',encoding:'utf8'});
-  await nativeShare.share({title:'Assiette',text:'Sauvegarde Assiette',url:w.uri,dialogTitle:'Enregistrer la sauvegarde'});
+  await nativeShare.share.share({title:'Assiette',text:label||'Sauvegarde Assiette',url:w.uri,dialogTitle:label||'Enregistrer la sauvegarde'});
 }
 async function exportData(){
   var json=JSON.stringify({app:'assiette',version:2,exported:new Date().toISOString(),data:S});
@@ -584,6 +586,7 @@ function importData(file){
   fr.onload=function(){
     try{
       var j=JSON.parse(fr.result), d=j&&j.data&&j.data.days;
+      if(j&&j.app==='assiette-menu'){importMenu(j);return}
       if(!d||typeof d!=='object')throw 0;
       var n=0, nr=0, nm=0;
       Object.keys(d).forEach(function(k){
@@ -621,6 +624,9 @@ function newSteps(s,head){
   if(s==='mgen')return mgenHtml(head);
   if(s==='mpick')return mpickHtml(head);
   if(s==='mlist')return mlistHtml(head);
+  if(s==='mentry')return mentryHtml(head);
+  if(s==='shop')return shopHtml(head);
+  if(s==='mshare')return mshareHtml(head);
   return null;
 }
 var typeChips=function(act,cur){return '<div class="chips">'+TYPES.map(function(t){return '<button class="chip" data-act="'+act+'" data-v="'+esc(t)+'" aria-pressed="'+(t===cur)+'">'+t+'</button>'}).join('')+'</div>'};
@@ -631,7 +637,7 @@ function editHtml(head){
   var rows=e.items.length?'<div class="items">'+e.items.map(function(i,k){
     var hasM=typeof i.p==='number'&&i._b&&i._b.g>0;
     return '<div class="bk"><span class="nm">'+esc(i.n)+'</span>'+
-      (hasM?'<input class="in num" type="number" inputmode="decimal" min="0" data-bind="ed-g" data-i="'+k+'" value="'+i.g+'" aria-label="Grammes : '+esc(i.n)+'">':'<span class="num note">'+(i.g?nf(i.g)+' g':'')+'</span>')+
+      (hasM?'<input class="in num" type="number" inputmode="decimal" min="0" data-bind="ed-g" data-i="'+k+'" value="'+i.g+'" aria-label="Grammes : '+esc(i.n)+'">':'<span class="num note" id="ed-s'+k+'">'+(i.g?nf(i.g)+' g':'')+'</span>')+
       '<b class="num" id="ed-k'+k+'">'+(typeof i.kcal==='number'?nf(i.kcal):'')+'</b><button class="x" data-act="ed-del" data-i="'+k+'" aria-label="Retirer : '+esc(i.n)+'">'+IC.x+'</button></div>';
   }).join('')+'</div>':'<p class="note">Ce repas n’a pas de détail par aliment. Modifiez directement les totaux.</p>';
   var fld=function(id,label,val){return '<label class="f" for="'+id+'">'+label+'<input class="in num" id="'+id+'" type="number" inputmode="decimal" min="0" data-bind="'+id.replace('e-','ed-')+'" value="'+esc(val)+'"></label>'};
@@ -639,6 +645,8 @@ function editHtml(head){
     '<label class="f" for="e-name">Nom<input class="in" id="e-name" data-bind="ed-name" value="'+esc(e.name)+'" autocomplete="off"></label>'+
     '<div class="row2"><label class="f" for="e-type">Repas<select class="in" id="e-type" data-bind="ed-type">'+TYPES.map(function(t){return '<option'+(t===e.type?' selected':'')+'>'+t+'</option>'}).join('')+'</select></label>'+
     '<label class="f" for="e-time">Heure<input class="in num" id="e-time" type="time" data-bind="ed-time" value="'+esc(e.time)+'"></label></div>'+
+    '<label class="f" for="e-ppl">Repas pour combien de personnes ?<input class="in num" id="e-ppl" type="number" inputmode="numeric" min="1" max="'+PPL_MAX+'" data-bind="ed-ppl" value="'+esc(e.ppl||1)+'"></label>'+
+    '<p class="note">Les valeurs ci-dessous sont votre part. Si le plat était pour 4 personnes, saisissez 4 : quantités et totaux sont divisés par 4.</p>'+
     '<div><div class="eyebrow" style="margin-bottom:6px">Aliments</div>'+rows+'<button class="btn alt block" style="margin-top:8px" data-act="ed-add">Ajouter un aliment</button></div>'+
     '<div><div class="eyebrow" style="margin-bottom:6px">Totaux du repas</div><div class="row2">'+fld('e-kcal','Calories (kcal)',Math.round(e.kcal))+fld('e-p','Protéines (g)',r1(e.p))+'</div><div class="row2" style="margin-top:10px">'+fld('e-c','Glucides (g)',r1(e.c))+fld('e-f','Lipides (g)',r1(e.f))+'</div></div>'+
     reanalyzeBlock()+
@@ -849,6 +857,7 @@ function eatEntry(k,id){
   }
   if(k>TODAY){toast('Ce jour n’est pas encore arrivé.');return}
   var m={id:uid8(),t:DEFT[e.type]||'12:30',type:e.type,name:e.name,kcal:Math.round(e.kcal),p:r1(e.p),c:r1(e.c),f:r1(e.f),items:(e.items||[]).slice(),src:'menu'};
+  if(pplOf(e)>1)m.sh=pplOf(e);
   (S.days[k]=S.days[k]||[]).push(m);S.days[k].sort(byTime);
   e.done=true;e.mealId=m.id;persist();render();toast('Ajouté au journal.');
 }
@@ -867,7 +876,7 @@ function clearWeek(){
 function openEdit(id){
   var k=ui.sel, m=(S.days[k]||[]).filter(function(x){return x.id===id})[0];if(!m)return;
   var items=(m.items||[]).map(function(i){var o=Object.assign({},i);if(typeof i.p==='number'&&i.g>0)o._b={g:i.g,kcal:i.kcal,p:i.p,c:i.c,f:i.f};return o});
-  newAdd('edit',{ed:{id:id,key:k,name:m.name,type:m.type,time:m.t,items:items,kcal:m.kcal,p:m.p,c:m.c,f:m.f,file:null,url:null,note:'',msg:'',prev:null}});
+  newAdd('edit',{ed:{id:id,key:k,ppl:m.sh||1,name:m.name,type:m.type,time:m.t,items:items,kcal:m.kcal,p:m.p,c:m.c,f:m.f,file:null,url:null,note:'',msg:'',prev:null}});
 }
 function edFill(){
   var e=add.ed, v={'e-kcal':Math.round(e.kcal),'e-p':r1(e.p),'e-c':r1(e.c),'e-f':r1(e.f)};
@@ -880,6 +889,7 @@ function edShift(nw,old){
 function edInput(f,t){
   var e=add.ed;
   if(f==='name'||f==='type'||f==='time'||f==='note'){e[f]=t.value;return}
+  if(f==='ppl'){edPpl(t);return}
   if(f==='kcal'||f==='p'||f==='c'||f==='f'){e[f]=num(t.value);return}
   if(f==='g'){
     var k=Number(t.dataset.i), it=e.items[k];if(!it)return;
@@ -898,7 +908,312 @@ async function saveEdit(){
   m.kcal=Math.round(num(e.kcal));m.p=r1(num(e.p));m.c=r1(num(e.c));m.f=r1(num(e.f));
   m.items=e.items.map(function(i){var o=Object.assign({},i);delete o._b;return o});
   if(th)m.thumb=th;
+  if((e.ppl||1)>1)m.sh=e.ppl;else delete m.sh;
   arr.sort(byTime);persist();closeAdd();render();toast('Repas modifié.');
+}
+
+/* ---------- week tools: shopping list, meal details for the menu, sharing ---------- */
+var PPL_MAX=50;
+var clampP=function(v){var n=Math.round(Number(v));return isFinite(n)&&n>=1?Math.min(PPL_MAX,n):1};
+var pplOf=function(e){return clampP(e&&e.ppl)};
+function weekKeys(){var a=[],i;for(i=0;i<7;i++)a.push(dkey(addDays(parseKey(ui.week),i)));return a}
+function weekLabel(){return fmtDM.format(parseKey(ui.week)).replace('.','')+' – '+fmtDM.format(addDays(parseKey(ui.week),6)).replace('.','')}
+function selAllDays(){var o={};weekKeys().forEach(function(k){if((S.menu[k]||[]).length)o[k]=true});return o}
+function dayChips(act,sel){
+  return '<div class="chips" role="group" aria-label="Jours">'+weekKeys().map(function(k){
+    var n=(S.menu[k]||[]).length, d=parseKey(k);
+    return '<button class="chip" data-act="'+act+'" data-v="'+k+'"'+(n?'':' disabled')+' aria-pressed="'+(!!sel[k])+'">'+esc(cap(fmtWd.format(d).replace('.',''))+' '+d.getDate())+'</button>';
+  }).join('')+'</div>';
+}
+function foodMatch(name){
+  var nn=norm(name).trim(), i, fn;
+  if(!nn)return null;
+  if(FMAP[name])return FMAP[name];
+  for(i=0;i<FOODS.length;i++){if(norm(FOODS[i][0])===nn)return FOODS[i]}
+  if(nn.length>=4)for(i=0;i<FOODS.length;i++){fn=norm(FOODS[i][0]);if(fn.indexOf(nn)===0||nn.indexOf(fn)===0)return FOODS[i]}
+  return null;
+}
+function enrich(it){
+  var o=Object.assign({},it);
+  if(typeof o.p==='number')return withBase(o);
+  var f=foodMatch(o.n);
+  if(!f||!(o.g>0))return o;
+  var k=o.g/100;
+  return withBase({n:o.n,g:o.g,kcal:r1(f[1]*k),p:r1(f[2]*k),c:r1(f[3]*k),f:r1(f[4]*k)});
+}
+
+/* shopping list */
+var SHOP_ORDER=['Fruits et légumes','Viandes, poissons, œufs, tofu','Produits laitiers','Féculents et céréales','Épicerie et boissons','Autres'];
+var SHOP_RE=[
+  [4,/huile|miel|sauce|beurre de|poudre|amande|noix|chocolat|confiture|sucre|mayonnaise|ketchup|houmous|chips|biscuit|cafe|\bjus\b|soda|biere|\bvin\b|\bsel\b|epice|conserve|moutarde|vinaigre/],
+  [2,/\blait\b|yaourt|yogourt|fromage|skyr|emmental|mozzarella|feta|parmesan|cottage|beurre|creme/],
+  [1,/poulet|boeuf|steak|porc|jambon|dinde|saumon|thon|cabillaud|crevette|sardine|oeuf|poisson|viande|lardon|tofu|tempeh|edamame/],
+  [3,/\bpain\b|\briz\b|\bpates?\b|pomme de terre|pommes de terre|patate|quinoa|couscous|flocon|lentille|pois chiche|haricots rouges|frite|farine|semoule|croissant|pizza|burger/],
+  [0,/tomate|carotte|brocoli|salade|courgette|haricots verts|epinard|champignon|\bmais\b|oignon|poivron|concombre|avocat|banane|pomme|orange|fraise|raisin|citron|legume|fruit|\bail\b|poireau|chou|aubergine|ananas|poire|kiwi|mangue|persil|basilic|herbe/]
+];
+function shopCat(name){var n=norm(name), i;for(i=0;i<SHOP_RE.length;i++)if(SHOP_RE[i][1].test(n))return SHOP_RE[i][0];return 5}
+function fmtQty(g,name){
+  if(!(g>0))return '';
+  var s=g>=1000?(Math.round(g/100)/10).toLocaleString('fr-BE')+' kg':Math.ceil(g/5)*5+' g';
+  var n=norm(name);
+  if(/oeuf/.test(n)&&!/blanc/.test(n))s+=' (≈ '+Math.max(1,Math.round(g/55))+' œuf'+(g/55>1.5?'s':'')+')';
+  return s;
+}
+function shopList(sel,skipDone){
+  var map={}, nod=[];
+  weekKeys().forEach(function(k){
+    if(!sel[k])return;
+    (S.menu[k]||[]).forEach(function(e){
+      if(skipDone&&e.done)return;
+      var p=pplOf(e), its=e.items||[];
+      if(!its.length){nod.push(e.name+(p>1?' ('+p+' pers.)':''));return}
+      its.forEach(function(i){
+        var key=norm(i.n).trim();if(!key)return;
+        var o=map[key]||(map[key]={key:key,n:i.n,g:0,cat:shopCat(i.n)});
+        o.g+=(i.g||0)*p;
+      });
+    });
+  });
+  var cats=SHOP_ORDER.map(function(c){return {name:c,rows:[]}});
+  Object.keys(map).forEach(function(k){cats[map[k].cat].rows.push(map[k])});
+  cats.forEach(function(c){c.rows.sort(function(a,b){return a.n.localeCompare(b.n,'fr')})});
+  return {cats:cats.filter(function(c){return c.rows.length}),nodetail:nod};
+}
+function openShop(){
+  if(!Object.keys(selAllDays()).length){toast('Ajoutez d’abord des repas au menu de cette semaine.');return}
+  newAdd('shop',{sh:{days:selAllDays(),skipDone:false,checked:{},setp:''}});
+}
+function shopHtml(head){
+  var s=add.sh, L=shopList(s.days,s.skipDone), n=Object.keys(s.days).filter(function(k){return s.days[k]}).length, idx=0, list='';
+  if(!n)list='<p class="note">Choisissez au moins un jour.</p>';
+  else if(!L.cats.length)list='<p class="note">Aucun ingrédient détaillé dans ces repas. Ouvrez un repas du menu pour en ajouter.</p>';
+  L.cats.forEach(function(c){
+    list+='<div class="eyebrow" style="margin:12px 0 6px">'+esc(c.name)+'</div><div class="items">'+c.rows.map(function(o){
+      var on=!!s.checked[o.key], i=idx++;
+      return '<div class="it'+(on?' off':'')+'"><input type="checkbox" id="sh'+i+'" data-act="sh-chk" data-k="'+esc(o.key)+'"'+(on?' checked':'')+' aria-label="Déjà acheté : '+esc(o.n)+'"><label class="nm" for="sh'+i+'">'+esc(o.n)+'</label><b class="num">'+esc(fmtQty(o.g,o.n))+'</b></div>';
+    }).join('')+'</div>';
+  });
+  return head('Liste de courses')+'<p class="sub">Semaine du '+esc(weekLabel())+'</p>'+
+    '<div><div class="eyebrow" style="margin-bottom:6px">Jours à inclure</div>'+dayChips('sh-day',s.days)+
+    '<div class="acts"><button class="link alt" data-act="sh-all">Tout sélectionner</button><button class="link" data-act="sh-none">Aucun</button></div></div>'+
+    '<div class="chips"><button class="chip" data-act="sh-skip" aria-pressed="'+s.skipDone+'">Ignorer les repas déjà mangés</button></div>'+
+    '<div id="sh-list">'+list+'</div>'+
+    (L.nodetail.length?'<p class="note">Repas sans ingrédients détaillés (non comptés) : '+esc(L.nodetail.join(', '))+'.</p>':'')+
+    '<div class="row2"><button class="btn alt" data-act="sh-copy">Copier</button><button class="btn" data-act="sh-share">Partager</button></div>'+
+    '<p class="note">Cochez ce que vous avez déjà : ces lignes ne sont pas partagées. Les quantités suivent les recettes (poids cuit pour le riz, les pâtes, la viande…), prévoyez moins de produit sec.</p>'+
+    '<div class="reana"><div class="eyebrow">Nombre de personnes</div><div class="row2"><label class="f" for="sh-p">Pour<input class="in num" id="sh-p" type="number" inputmode="numeric" min="1" max="'+PPL_MAX+'" data-bind="sh-p" placeholder="Ex. 4" value="'+esc(s.setp)+'"></label><button class="btn alt" data-act="sh-setp">Appliquer aux repas choisis</button></div>'+
+    '<p class="note">Multiplie les quantités de chaque repas choisi. Vous pouvez aussi régler les personnes repas par repas depuis le menu.</p></div>';
+}
+function shopText(){
+  var s=add.sh, L=shopList(s.days,s.skipDone), out=['Liste de courses, semaine du '+weekLabel()];
+  L.cats.forEach(function(c){
+    var rows=c.rows.filter(function(o){return !s.checked[o.key]});
+    if(!rows.length)return;
+    out.push('','■ '+c.name);
+    rows.forEach(function(o){var q=fmtQty(o.g,o.n);out.push('- '+o.n+(q?' : '+q:''))});
+  });
+  if(out.length===1)out.push('','Rien à acheter.');
+  if(L.nodetail.length)out.push('','Repas sans ingrédients détaillés : '+L.nodetail.join(', ')+'.');
+  out.push('','Envoyé depuis Assiette');
+  return out.join('\n');
+}
+function applyPeople(){
+  var s=add.sh, n=clampP(s.setp);
+  if(!(Number(s.setp)>=1)){toast('Indiquez un nombre de personnes.');return}
+  var prev=[];
+  weekKeys().forEach(function(k){
+    if(!s.days[k])return;
+    (S.menu[k]||[]).forEach(function(e){
+      if(s.skipDone&&e.done)return;
+      prev.push([e,e.ppl]);
+      if(n>1)e.ppl=n;else delete e.ppl;
+    });
+  });
+  persist();render();renderSheet();
+  toast('Quantités calculées pour '+n+' personne'+(n>1?'s':'')+'.',function(){prev.forEach(function(x){if(x[1])x[0].ppl=x[1];else delete x[0].ppl});persist();render();if(add&&add.step==='shop')renderSheet()});
+}
+
+/* one menu entry: ingredients, recipe, number of people */
+function openMentry(k,id){
+  var e=(S.menu[k]||[]).filter(function(x){return x.id===id})[0];if(!e)return;
+  var r=e.recipeId?findRecipe(e.recipeId):null;
+  newAdd('mentry',{me:{k:k,id:id,name:e.name,type:e.type,ppl:pplOf(e),items:(e.items||[]).map(enrich),kcal:e.kcal,p:e.p,c:e.c,f:e.f,rid:r?r.id:null}});
+}
+function meQtyText(i,ppl){return i.g>0?nf(i.g*ppl)+' g':''}
+function mentryHtml(head){
+  var m=add.me, r=m.rid?findRecipe(m.rid):null, d=parseKey(m.k), minus='<svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>';
+  var rows=m.items.length?'<div class="items">'+m.items.map(function(i,k){
+    return '<div class="bk q"><span class="nm">'+esc(i.n)+'</span><input class="in num" type="number" inputmode="decimal" min="0" data-bind="me-g" data-i="'+k+'" value="'+r1(i.g||0)+'" aria-label="Grammes par personne : '+esc(i.n)+'">'+
+      '<b class="num" id="me-q'+k+'">'+meQtyText(i,m.ppl)+'</b><button class="x" data-act="me-del" data-i="'+k+'" aria-label="Retirer : '+esc(i.n)+'">'+IC.x+'</button></div>';
+  }).join('')+'</div>':'<p class="note">Aucun ingrédient détaillé pour ce repas. Ajoutez-en ci-dessous.</p>';
+  var fld=function(id,label,val){return '<label class="f" for="'+id+'">'+label+'<input class="in num" id="'+id+'" type="number" inputmode="decimal" min="0" data-bind="'+id+'" value="'+esc(val)+'"></label>'};
+  return head('Repas du menu')+'<p class="sub">'+esc(cap(fmtLong.format(d)))+'</p>'+
+    '<label class="f" for="me-name">Nom<input class="in" id="me-name" data-bind="me-name" value="'+esc(m.name)+'" autocomplete="off"></label>'+
+    '<div class="row2"><label class="f" for="me-type">Repas<select class="in" id="me-type" data-bind="me-type">'+TYPES.map(function(t){return '<option'+(t===m.type?' selected':'')+'>'+t+'</option>'}).join('')+'</select></label>'+
+    '<div class="f" role="group" aria-label="Nombre de personnes"><span>Personnes</span><div class="stp"><button class="x" data-act="me-ppl" data-v="-1" aria-label="Une personne de moins">'+minus+'</button>'+
+    '<input class="in num" id="me-ppl" type="number" inputmode="numeric" min="1" max="'+PPL_MAX+'" data-bind="me-ppl" value="'+m.ppl+'" aria-label="Nombre de personnes"><button class="x" data-act="me-ppl" data-v="1" aria-label="Une personne de plus">'+IC.plus+'</button></div></div></div>'+
+    '<div><div class="eyebrow" style="margin-bottom:6px">Ingrédients, grammes par personne</div>'+rows+
+    '<div class="row2" style="margin-top:10px"><label class="f" for="me-nn">Autre ingrédient<input class="in" id="me-nn" placeholder="Ex. citron, sel" autocomplete="off"></label><label class="f" for="me-ng">Grammes<input class="in num" id="me-ng" type="number" inputmode="decimal" min="0" placeholder="Ex. 50"></label></div>'+
+    '<div class="row2" style="margin-top:8px"><button class="btn alt" data-act="me-addfree">Ajouter</button><button class="btn alt" data-act="me-add">Depuis la liste</button></div>'+
+    '<p class="note" style="margin-top:6px">La colonne de droite donne la quantité pour tout le monde. Les totaux ci-dessous sont par personne.</p></div>'+
+    '<div><div class="eyebrow" style="margin-bottom:6px">Totaux par personne</div><div class="row2">'+fld('me-kcal','Calories (kcal)',Math.round(m.kcal))+fld('me-p','Protéines (g)',r1(m.p))+'</div><div class="row2" style="margin-top:10px">'+fld('me-c','Glucides (g)',r1(m.c))+fld('me-f','Lipides (g)',r1(m.f))+'</div>'+
+    '<p class="note" id="me-all" style="margin-top:6px">'+meAllText()+'</p></div>'+
+    (r&&r.steps&&r.steps.length?'<div><div class="eyebrow" style="margin-bottom:6px">Recette'+(r.time?' · '+r.time+' min':'')+'</div><ol class="steps">'+r.steps.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ol></div>':'')+
+    '<button class="btn block" data-act="me-save">Enregistrer</button>';
+}
+function meAllText(){var m=add.me;return m.ppl>1?'Pour '+m.ppl+' personnes : '+nf(m.kcal*m.ppl)+' kcal en tout.':'Pour 1 personne.'}
+function meFill(){
+  var m=add.me, v={'me-kcal':Math.round(m.kcal),'me-p':r1(m.p),'me-c':r1(m.c),'me-f':r1(m.f)};
+  Object.keys(v).forEach(function(id){var el=$('#'+id);if(el)el.value=v[id]});
+  var a=$('#me-all');if(a)a.textContent=meAllText();
+}
+function meQty(){add.me.items.forEach(function(i,k){var el=$('#me-q'+k);if(el)el.textContent=meQtyText(i,add.me.ppl)});var a=$('#me-all');if(a)a.textContent=meAllText()}
+function meShift(nw,old){
+  var m=add.me, sh=function(a,b,c){return Math.max(0,r1(num(a)+b-c))};
+  m.kcal=sh(m.kcal,nw.kcal,old.kcal);m.p=sh(m.p,nw.p,old.p);m.c=sh(m.c,nw.c,old.c);m.f=sh(m.f,nw.f,old.f);meFill();
+}
+function meInput(f,t){
+  var m=add.me;
+  if(f==='name'||f==='type'){m[f]=t.value;return}
+  if(f==='kcal'||f==='p'||f==='c'||f==='f'){m[f]=num(t.value);meFill();return}
+  if(f==='ppl'){m.ppl=clampP(t.value);meQty();return}
+  if(f==='g'){
+    var k=Number(t.dataset.i), it=m.items[k];if(!it)return;
+    var old=contrib(it);it.g=num(t.value);
+    if(it._b&&it._b.g>0&&typeof it.p==='number'){var r=it.g/it._b.g;it.kcal=r1(it._b.kcal*r);it.p=r1(it._b.p*r);it.c=r1(it._b.c*r);it.f=r1(it._b.f*r);meShift(contrib(it),old)}
+    meQty();
+  }
+}
+function meStep(d){var m=add.me;m.ppl=clampP(m.ppl+d);var el=$('#me-ppl');if(el)el.value=m.ppl;meQty()}
+function meDel(i){var m=add.me, it=m.items.splice(i,1)[0];if(it)meShift({kcal:0,p:0,c:0,f:0},contrib(it));renderSheet()}
+function meAddFree(){
+  var m=add.me, n=($('#me-nn').value||'').trim().slice(0,60), g=num($('#me-ng').value);
+  if(!n){toast('Indiquez le nom de l’ingrédient.');return}
+  var it=enrich({n:n,g:g});
+  m.items.push(it);if(typeof it.p==='number')meShift(contrib(it),{kcal:0,p:0,c:0,f:0});
+  renderSheet();
+}
+function meSave(){
+  var m=add.me, e=(S.menu[m.k]||[]).filter(function(x){return x.id===m.id})[0];
+  if(!e){closeAdd();return}
+  if(!(num(m.kcal)>0)){toast('Indiquez au moins les calories.');return}
+  e.name=((m.name||'').trim()||'Repas').slice(0,70);e.type=m.type;
+  e.kcal=Math.round(num(m.kcal));e.p=r1(num(m.p));e.c=r1(num(m.c));e.f=r1(num(m.f));
+  e.items=m.items.map(function(i){var o=Object.assign({},i);delete o._b;return o});
+  if(m.ppl>1)e.ppl=m.ppl;else delete e.ppl;
+  persist();closeAdd();render();toast('Repas du menu modifié.');
+}
+
+/* journal: meal shared between several people (the values are your share) */
+function edPpl(t){
+  var e=add.ed, n=clampP(t.value), old=e.ppl||1;
+  if(n===old)return;
+  var fac=old/n, sc=function(v){return typeof v==='number'?r1(v*fac):v};
+  e.items.forEach(function(i,k){
+    i.g=sc(i.g);i.kcal=sc(i.kcal);i.p=sc(i.p);i.c=sc(i.c);i.f=sc(i.f);
+    if(i._b)i._b={g:sc(i._b.g),kcal:sc(i._b.kcal),p:sc(i._b.p),c:sc(i._b.c),f:sc(i._b.f)};
+    var inp=$('#sheet [data-bind="ed-g"][data-i="'+k+'"]');if(inp)inp.value=i.g;
+    var kc=$('#ed-k'+k);if(kc)kc.textContent=nf(i.kcal||0);
+    var sp=$('#ed-s'+k);if(sp)sp.textContent=i.g?nf(i.g)+' g':'';
+  });
+  e.kcal=sc(e.kcal);e.p=sc(e.p);e.c=sc(e.c);e.f=sc(e.f);e.ppl=n;edFill();
+}
+
+/* sharing */
+function nativeInit(){var C=window.Capacitor;if(!nativeShare)nativeShare={fs:C.registerPlugin('Filesystem'),share:C.registerPlugin('Share')};return nativeShare}
+async function copyText(text){
+  try{await navigator.clipboard.writeText(text);toast('Copié dans le presse-papiers.');return true}catch(e){}
+  try{var ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0';document.body.appendChild(ta);ta.select();var ok=document.execCommand('copy');ta.remove();if(ok){toast('Copié dans le presse-papiers.');return true}}catch(e){}
+  toast('Impossible de copier sur cet appareil.');return false;
+}
+async function shareText(title,text){
+  if(isNative()){try{await nativeInit().share.share({title:title,text:text,dialogTitle:title});return true}catch(e){if(e&&/cancel|dismiss/i.test(String(e.message||e)))return false}}
+  try{if(navigator.share){await navigator.share({title:title,text:text});return true}}catch(e){if(e&&e.name==='AbortError')return false}
+  return copyText(text);
+}
+async function shareFile(name,text,label){
+  if(isNative()){try{await shareNative(name,text,label);return true}catch(e){if(e&&/cancel|dismiss/i.test(String(e.message||e)))return false}}
+  var blob=new Blob([text],{type:'application/json'});
+  try{var file=new File([blob],name,{type:'application/json'});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:label||'Assiette'});return true}}catch(e){if(e&&e.name==='AbortError')return false}
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(function(){URL.revokeObjectURL(a.href)},3000);toast('Fichier enregistré dans vos téléchargements.');return true;
+}
+function menuText(sel,withIng){
+  var out=['Menu de la semaine du '+weekLabel()], any=false;
+  weekKeys().forEach(function(k){
+    if(!sel[k])return;
+    var es=menuFor(k);if(!es.length)return;
+    any=true;out.push('',cap(fmtLong.format(parseKey(k))));
+    es.forEach(function(e){
+      var p=pplOf(e);
+      out.push('• '+e.type+' : '+e.name+(p>1?' (pour '+p+' pers.)':'')+' · '+nf(e.kcal)+' kcal par pers.');
+      if(withIng&&e.items&&e.items.length)out.push('   '+e.items.map(function(i){return i.n+(i.g>0?' '+nf(i.g*p)+' g':'')}).join(', '));
+    });
+  });
+  if(!any)out.push('','Aucun repas.');
+  out.push('','Envoyé depuis Assiette');
+  return out.join('\n');
+}
+function menuFileJson(sel){
+  var rids={}, days=weekKeys().map(function(k){
+    return sel[k]?(S.menu[k]||[]).map(function(e){var o=JSON.parse(JSON.stringify(e));delete o.id;delete o.done;delete o.mealId;if(o.recipeId)rids[o.recipeId]=1;return o}):[];
+  });
+  return JSON.stringify({app:'assiette-menu',version:1,exported:new Date().toISOString(),days:days,recipes:S.recipes.filter(function(r){return rids[r.id]})});
+}
+function cleanEntry(x){
+  if(!x||!isFinite(x.kcal)||!(x.kcal>0))return null;
+  var o={id:uid8(),type:TYPES.indexOf(x.type)>=0?x.type:'Déjeuner',name:String(x.name||'Repas').slice(0,70),kcal:Math.round(num(x.kcal)),p:r1(num(x.p)),c:r1(num(x.c)),f:r1(num(x.f)),
+    items:(Array.isArray(x.items)?x.items:[]).slice(0,40).map(function(i){
+      var q={n:String(i&&i.n||'').slice(0,60),g:r1(num(i&&i.g))};
+      ['kcal','p','c','f'].forEach(function(f){if(i&&typeof i[f]==='number'&&isFinite(i[f])&&i[f]>=0)q[f]=i[f]});
+      return q;
+    }).filter(function(i){return i.n})};
+  if(x.recipeId)o.recipeId=String(x.recipeId).slice(0,40);
+  if(clampP(x.ppl)>1)o.ppl=clampP(x.ppl);
+  return o;
+}
+function cleanRecipe(r){
+  if(!r||!r.id||!Array.isArray(r.items))return null;
+  var items=r.items.slice(0,40).map(function(i){return {n:String(i&&i.n||'').slice(0,60),g:Math.round(num(i&&i.g)),kcal:num(i&&i.kcal),p:num(i&&i.p),c:num(i&&i.c),f:num(i&&i.f)}}).filter(function(i){return i.n});
+  if(!items.length)return null;
+  return {id:String(r.id).slice(0,40),name:String(r.name||'Recette').slice(0,70),time:Math.round(num(r.time)),types:(Array.isArray(r.types)?r.types:[]).filter(function(t){return TYPES.indexOf(t)>=0}),veg:r.veg===true,
+    steps:(Array.isArray(r.steps)?r.steps:[]).slice(0,12).map(function(s){return String(s).slice(0,240)}),items:items,src:r.src==='ia'?'ia':'perso'};
+}
+function importMenu(j){
+  if(!Array.isArray(j.days))throw 0;
+  var keys=weekKeys(), added=[], newR=[];
+  j.days.slice(0,7).forEach(function(arr,i){
+    if(!Array.isArray(arr))return;
+    arr.slice(0,12).forEach(function(x){var e=cleanEntry(x);if(!e)return;(S.menu[keys[i]]=S.menu[keys[i]]||[]).push(e);added.push([keys[i],e.id])});
+  });
+  if(!added.length)throw 0;
+  (Array.isArray(j.recipes)?j.recipes:[]).slice(0,30).forEach(function(r){var c=cleanRecipe(r);if(c&&!findRecipe(c.id)){S.recipes.push(c);newR.push(c.id)}});
+  persist();ui.tab='menu';ui.mview='week';render();
+  toast(added.length+' repas importé'+(added.length>1?'s':'')+' dans la semaine du '+weekLabel()+'.',function(){
+    added.forEach(function(a){S.menu[a[0]]=(S.menu[a[0]]||[]).filter(function(e){return e.id!==a[1]})});
+    S.recipes=S.recipes.filter(function(r){return newR.indexOf(r.id)<0});persist();render();
+  });
+}
+function openMshare(){
+  if(!Object.keys(selAllDays()).length){toast('Ajoutez d’abord des repas au menu de cette semaine.');return}
+  newAdd('mshare',{ms:{days:selAllDays(),fmt:'text',ing:true}});
+}
+function mshareHtml(head){
+  var s=add.ms, txt=s.fmt==='text';
+  return head('Partager le menu')+'<p class="sub">Semaine du '+esc(weekLabel())+'</p>'+
+    '<div><div class="eyebrow" style="margin-bottom:6px">Jours à partager</div>'+dayChips('ms-day',s.days)+'</div>'+
+    '<div><div class="eyebrow" style="margin-bottom:6px">Format</div><div class="chips"><button class="chip" data-act="ms-fmt" data-v="text" aria-pressed="'+txt+'">Texte</button><button class="chip" data-act="ms-fmt" data-v="file" aria-pressed="'+!txt+'">Fichier Assiette</button>'+
+    (txt?'<button class="chip" data-act="ms-ing" aria-pressed="'+s.ing+'">Avec les ingrédients</button>':'')+'</div>'+
+    '<p class="note" style="margin-top:6px">'+(txt?'Un message lisible partout (messagerie, e-mail).':'Un fichier que votre famille ouvre dans Assiette avec Menu, puis « Importer un menu reçu » : repas, ingrédients, nombre de personnes et recettes perso arrivent dans la semaine affichée chez eux.')+'</p></div>'+
+    (txt?'<pre class="prev" aria-label="Aperçu">'+esc(menuText(s.days,s.ing))+'</pre>':'')+
+    '<div class="row2">'+(txt?'<button class="btn alt" data-act="ms-copy">Copier</button>':'')+'<button class="btn'+(txt?'':' block')+'" data-act="ms-go">Partager</button></div>';
+}
+async function msGo(copy){
+  var s=add.ms;
+  if(!Object.keys(s.days).some(function(k){return s.days[k]})){toast('Choisissez au moins un jour.');return}
+  if(copy){await copyText(menuText(s.days,s.ing));return}
+  if(s.fmt==='text')await shareText('Menu de la semaine',menuText(s.days,s.ing));
+  else await shareFile('assiette-menu-'+ui.week+'.json',menuFileJson(s.days),'Menu Assiette');
 }
 
 /* ---------- toast ---------- */
@@ -942,6 +1257,13 @@ document.addEventListener('click',function(e){
         add.ed.items.push(it);edShift(contrib(it),{kcal:0,p:0,c:0,f:0});
       });
       add.basket=[];add.q='';add.ret='';add.step='edit';renderSheet();return;
+    }
+    if(add.ret==='mentry'){
+      add.basket.forEach(function(x){
+        var f=FOODS[x.f],k=x.g/100, it=withBase({n:f[0],g:x.g,kcal:r1(f[1]*k),p:r1(f[2]*k),c:r1(f[3]*k),f:r1(f[4]*k)});
+        add.me.items.push(it);meShift(contrib(it),{kcal:0,p:0,c:0,f:0});
+      });
+      add.basket=[];add.q='';add.ret='';add.step='mentry';renderSheet();return;
     }
     var its=add.basket.map(function(x){var f=FOODS[x.f],k=x.g/100;return {n:f[0],g:x.g,kcal:f[1]*k,p:f[2]*k,c:f[3]*k,f:f[4]*k,on:true}});
     add.res={name:its.slice(0,2).map(function(i){return i.n}).join(', ').slice(0,60),conf:'',items:its,scale:1,src:'liste'};
@@ -991,12 +1313,35 @@ document.addEventListener('click',function(e){
   else if(a==='ed-undo'){var pv=add.ed.prev;if(pv){add.ed.items=pv.items;add.ed.kcal=pv.kcal;add.ed.p=pv.p;add.ed.c=pv.c;add.ed.f=pv.f;add.ed.prev=null;add.ed.msg='Estimation précédente rétablie.';renderSheet()}}
   else if(a==='ed-photo-clear'){if(add.ed.url)URL.revokeObjectURL(add.ed.url);add.ed.url=null;add.ed.file=null;renderSheet()}
   else if(a==='ed-save')saveEdit();
+  else if(a==='m-open')openMentry(b.dataset.k,b.dataset.id);
+  else if(a==='me-ppl')meStep(Number(v));
+  else if(a==='me-del')meDel(Number(b.dataset.i));
+  else if(a==='me-add'){add.ret='mentry';add.q='';add.basket=[];add.step='search';renderSheet();var mq=$('#s-q');if(mq)mq.focus()}
+  else if(a==='me-addfree')meAddFree();
+  else if(a==='me-save')meSave();
+  else if(a==='shop-open')openShop();
+  else if(a==='sh-day'){add.sh.days[v]=!add.sh.days[v];renderSheet()}
+  else if(a==='sh-all'){add.sh.days=selAllDays();renderSheet()}
+  else if(a==='sh-none'){add.sh.days={};renderSheet()}
+  else if(a==='sh-skip'){add.sh.skipDone=!add.sh.skipDone;renderSheet()}
+  else if(a==='sh-chk'){add.sh.checked[b.dataset.k]=b.checked;var row=b.closest('.it');if(row)row.classList.toggle('off',b.checked)}
+  else if(a==='sh-setp')applyPeople();
+  else if(a==='sh-copy')copyText(shopText());
+  else if(a==='sh-share')shareText('Liste de courses',shopText());
+  else if(a==='mshare-open')openMshare();
+  else if(a==='ms-day'){add.ms.days[v]=!add.ms.days[v];renderSheet()}
+  else if(a==='ms-fmt'){add.ms.fmt=v;renderSheet()}
+  else if(a==='ms-ing'){add.ms.ing=!add.ms.ing;renderSheet()}
+  else if(a==='ms-go')msGo(false);
+  else if(a==='ms-copy')msGo(true);
 });
 document.addEventListener('input',function(e){
   var t=e.target, bind=t.dataset&&t.dataset.bind;
   if(!bind)return;
   if(bind==='rq'){ui.rq=t.value;var rl=$('#r-list');if(rl)rl.innerHTML=recipeRows();var rc=$('#r-count');if(rc)rc.textContent=recipeCount();return}
   if(!add)return;
+  if(bind.indexOf('me-')===0&&add.me){meInput(bind.slice(3),t);return}
+  if(bind==='sh-p'&&add.sh){add.sh.setp=t.value;return}
   if(bind.indexOf('ed-')===0&&add.ed){edInput(bind.slice(3),t);return}
   if(bind==='rday'){add.rday=t.value;var jb=$('[data-act="r-journal"]');if(jb)jb.disabled=t.value>TODAY;return}
   if(bind==='mq'){add.mq=t.value;var ml=$('#m-list');if(ml)ml.innerHTML=mlistRows();return}
