@@ -280,6 +280,7 @@ function viewToday(){
     '<div class="ring-c"><span class="big num">'+nf(Math.abs(left))+'</span><span class="lbl'+(over?' over':'')+'">'+(over?'kcal en trop':'kcal restantes')+'</span></div></div>'+
     '<div class="stat"><b class="num">'+nf(g.kcal)+'</b><span>objectif</span></div></section>'+
     '<div class="macros">'+macro('Protéines',t.p,g.p,'var(--p)')+macro('Glucides',t.c,g.c,'var(--c)')+macro('Lipides',t.f,g.f,'var(--f)')+'</div>'+
+    (g.p-t.p>0?'<button class="ft-ideas" data-act="ft-ideas"><span>Idées pour atteindre mes protéines</span><b class="num">'+nf(g.p-t.p)+' g restants</b></button>':'')+
     (demo()?'<div class="demo"><span>Journée d’exemple. Vos propres repas la remplacent.</span><button data-act="dismiss-demo">Commencer à zéro</button></div>':'')+
     '<div class="sec-h"><h2>Repas</h2><span class="eyebrow">'+ms.length+' enregistré'+(ms.length>1?'s':'')+'</span></div>'+list;
 }
@@ -354,8 +355,8 @@ function viewGoals(){
 /* ---------- menu and recipes views ---------- */
 function viewMenu(){
   return '<div class="top"><div class="brand"><i></i>Assiette</div><div><div class="eyebrow">Planifier</div><h1>Menu</h1></div></div>'+
-    '<div class="seg" role="group" aria-label="Vue"><button data-act="mview" data-v="week" aria-pressed="'+(ui.mview==='week')+'">Semaine</button><button data-act="mview" data-v="recipes" aria-pressed="'+(ui.mview==='recipes')+'">Recettes</button></div>'+
-    (ui.mview==='week'?weekHtml():recipesHtml());
+    '<div class="seg" role="group" aria-label="Vue"><button data-act="mview" data-v="week" aria-pressed="'+(ui.mview==='week')+'">Semaine</button><button data-act="mview" data-v="recipes" aria-pressed="'+(ui.mview==='recipes')+'">Recettes</button><button data-act="mview" data-v="foods" aria-pressed="'+(ui.mview==='foods')+'">Aliments</button></div>'+
+    (ui.mview==='week'?weekHtml():ui.mview==='foods'?foodsHtml():recipesHtml());
 }
 function entryRow(e,k){
   return '<div class="ment"><button class="chk" data-act="m-eat" data-k="'+k+'" data-id="'+esc(e.id)+'" aria-pressed="'+(!!e.done)+'" aria-label="'+(e.done?'Retirer du journal : ':'Marquer comme mangé : ')+esc(e.name)+'"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>'+
@@ -1081,7 +1082,7 @@ function enrich(it){
 /* shopping list */
 var SHOP_ORDER=['Fruits et légumes','Viandes, poissons, œufs, tofu','Produits laitiers','Féculents et céréales','Épicerie et boissons','Autres'];
 var SHOP_RE=[
-  [4,/huile|miel|sauce|beurre de|poudre|amande|noix|noisette|cajou|pistache|cacahuete|graines?|chocolat|confiture|sucre|mayonnaise|ketchup|houmous|chips|biscuit|cookie|madeleine|speculoos|gaufre|pain d.epices|gateau|barre de cereales|glace|compote|sirop|pate a tartiner|pesto|vinaigrette|tahini|olive|cornichon|guacamole|soupe|cafe|\bthe\b|\bjus\b|soda|biere|\bvin\b|boisson|smoothie|lait chocolate|\bsel\b|epice|conserve|moutarde|vinaigre|tomate sechee|raisins secs|abricots secs|datte|coco|lasagne|quiche|croque|pizza|croissant jambon|wrap au|sandwich|kebab|sushi|carbonara|bolognaise|carbonnade|stoemp|waterzooi|chicons au gratin|fricadelle|nuggets|\beau\b|cappuccino|latte|espresso|limonade|kombucha|biere|cidre|champagne|porto|whisky|alcool|liqueur|milkshake|bonbon|praline|truffe|macaron|brownie|muffin|donut|beignet|eclair|mille-feuille|tarte|chausson|petit-beurre|digestive|gaufrette|barre|pop-corn|bretzel|sorbet|creme dessert|mousse|pudding|tiramisu|creme brulee|riz au lait|riz cantonais|gratin|hachis|blanquette|basquaise|couscous royal|paella|risotto|chili|curry de|poulet au curry|pad thai|\bnem\b|rouleau|miso|burrito|taco|taboule|salade (de pates|de pommes|nicoise|cesar|caprese)|coleslaw|veloute|bouillon|hot-dog|panini|bagel|boulets|vol-au-vent|poisson pane|bechamel|concentre|tomates? sechees?|cacao|levure|fecule|maizena|massepain|pate d.amande|creme de marrons|puree d.amande|saindoux|pignon|chataigne|poivrons grilles|falafel|steak vegetal|proteines de soja|mycoproteine|pate (brisee|feuilletee|a pizza)|chapelure|compote|epices|vinaigre/],
+  [4,/huile|miel|sauce|beurre de|poudre|amande|noix|noisette|cajou|pistache|cacahuete|graines?|chocolat|confiture|sucre|mayonnaise|ketchup|houmous|chips|biscuit|cookie|madeleine|speculoos|gaufre|pain d.epices|gateau|barre de cereales|glace|compote|sirop|pate a tartiner|pesto|vinaigrette|tahini|olive|cornichon|guacamole|soupe|cafe|\bthe\b|\bjus\b|soda|biere|\bvin\b|boisson|smoothie|lait chocolate|\bsel\b|epice|conserve|moutarde|vinaigre|tomate sechee|raisins secs|abricots secs|datte|coco|lasagne|quiche|croque|pizza|croissant jambon|wrap au|sandwich|kebab|sushi|carbonara|bolognaise|carbonnade|stoemp|waterzooi|chicons au gratin|fricadelle|nuggets|\beau\b|cappuccino|latte|espresso|limonade|kombucha|biere|cidre|champagne|porto|whisky|alcool|liqueur|milkshake|bonbon|praline|truffe|macaron|brownie|muffin|donut|beignet|eclair|mille-feuille|tarte|chausson|petit-beurre|digestive|gaufrette|barre|pop-corn|bretzel|sorbet|creme dessert|\bmousse|pudding|tiramisu|creme brulee|riz au lait|riz cantonais|gratin|hachis|blanquette|basquaise|couscous royal|paella|risotto|chili|curry de|poulet au curry|pad thai|\bnem\b|rouleau|miso|burrito|taco|taboule|salade (de pates|de pommes|nicoise|cesar|caprese)|coleslaw|veloute|bouillon|hot-dog|panini|bagel|boulets|vol-au-vent|poisson pane|bechamel|concentre|tomates? sechees?|cacao|levure|fecule|maizena|massepain|pate d.amande|creme de marrons|puree d.amande|saindoux|pignon|chataigne|poivrons grilles|falafel|steak vegetal|proteines de soja|mycoproteine|pate (brisee|feuilletee|a pizza)|chapelure|compote|epices|vinaigre/],
   [2,/\blait\b|yaourt|yogourt|fromage|skyr|emmental|mozzarella|feta|parmesan|cottage|beurre|creme|brie|camembert|gouda|ricotta|mascarpone|margarine|\bedam\b|maasdam|gruyere|comte|cheddar|roquefort|gorgonzola|boursin|ail et fines herbes|fromage fondu|raclette|halloumi|burrata|reblochon|maroilles|herve|kefir|babeurre|quark|faisselle|petit-suisse|creme liquide|ghee/],
   [1,/poulet|boeuf|steak|porc|jambon|dinde|saumon|thon|cabillaud|crevette|sardine|oeuf|poisson|viande|lardon|tofu|tempeh|edamame|veau|agneau|saucisse|saucisson|merguez|bacon|truite|maquereau|moule|surimi|seitan|hareng|cuisse|aile de poulet|pilon|foie|boudin|pate de campagne|rillettes|salami|chorizo|bresaola|grisons|cotelette|entrecote|\bboulettes?\b|lapin|canard|chevreuil|colin|\bsole\b|dorade|\bbar\b|haddock|anchois|calamar|poulpe|saint-jacques|huitre|crabe|homard|omelette|filet americain|gambas|escalope|\broti\b/],
   [3,/\bpain\b|baguette|biscotte|wrap|galette de riz|\briz\b|\bpates?\b|pomme de terre|pommes de terre|patate|puree|quinoa|couscous|boulgour|polenta|gnocchi|nouille|muesli|granola|cereale|cracker|flocon|corn flakes|porridge|orge|epeautre|sarrasin|millet|vermicelle|pita|naan|tortilla|brioche|cramique|pistolet|petit pain|pancake|pois casses|croquettes de pommes|lentille|pois chiche|haricots (rouges|blancs|noirs)|feves|frite|farine|semoule|croissant|crepe|pizza|burger/],
@@ -1442,6 +1443,191 @@ function switchUnit(it,name,mode){
   else delete it.u;
 }
 
+/* ---------- onglet Aliments : tableau pour trouver des protéines ---------- */
+/* Tout est déduit du nom et des valeurs de la liste FOODS (règles ci-dessous). Les repères sont indicatifs. */
+var FT={q:'',sort:'pp',dir:-1,type:'all',diet:'all',src:'',season:'',hide:false,rich:false,fit:false,fopen:false,open:-1,n:60};
+var FT_TYPES=[['all','Tous'],['meat','Viandes'],['fish','Poissons'],['egg','Œufs'],['dairy','Laitages'],['legume','Légumineuses, soja'],['grain','Céréales, féculents'],['fruit','Fruits'],['veg','Légumes'],['nut','Noix, graines'],['other','Autres']];
+var FT_TYPE_LBL={meat:'Viande',fish:'Poisson',egg:'Œuf',dairy:'Laitage',legume:'Légumineuse, soja',grain:'Céréale, féculent',fruit:'Fruit',veg:'Légume',nut:'Noix, graines',other:'Autre'};
+var FT_SRC=[['fer','Fer'],['calcium','Calcium'],['vitc','Vitamine C'],['omega3','Oméga-3'],['vitd','Vitamine D'],['b12','Vitamine B12']];
+var FT_SEASONS=[['now','Maintenant'],['spring','Printemps'],['summer','Été'],['autumn','Automne'],['winter','Hiver']];
+var SEASON_M={spring:[3,4,5],summer:[6,7,8],autumn:[9,10,11],winter:[12,1,2]};
+var MONTHS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+
+var R_OTHER=/pizza|sandwich|wrap|panini|croque|burger|kebab|sushi|lasagne|quiche|carbonara|bolognaise|vol-au-vent|stoemp|waterzooi|chicons au gratin|gratin|hachis|blanquette|basquaise|couscous royal|paella|risotto|chili|curry de|poulet au curry|pad thai|\bnem\b|rouleau|riz cantonais|burrito|taco|taboule|salade (de|nicoise|cesar|caprese)|coleslaw|soupe|veloute|miso|carbonnade|bourguignon|boulets|ratatouille|omelette|oeufs brouilles|oeuf mayonnaise|croissant|hot-dog|nuggets|fricadelle|poisson pane|filet americain|brioche|cramique|pistolet|petit pain|pancake|crepe|pain au chocolat|pain aux raisins|chausson|eclair|mille-feuille|macaron|beignet|muffin|brownie|petit-beurre|biscuit|cookie|madeleine|speculoos|gaufre|pain d.epices|gateau|tarte|tiramisu|\bmousse|pudding|creme dessert|creme brulee|creme de marrons|riz au lait|glace|sorbet|milkshake|chocolat|praline|truffe|bonbon|barre|confiture|\bmiel\b|\bsucre\b|sirop|pate a tartiner|compote|boisson|\bjus\b|soda|limonade|biere|\bvin\b|cidre|champagne|porto|alcool|liqueur|\bcafe\b|cappuccino|latte|espresso|\bthe\b|kombucha|\beau\b|smoothie|lait (de soja|d.amande|d.avoine|de riz|de coco|chocolate)|huile|saindoux|margarine|mayonnaise|sauce|vinaigre|vinaigrette|moutarde|pesto|bouillon|epices|levure|cacao|fecule|maizena|pate (brisee|feuilletee|a pizza)|pate d.amande|concentre|poudre|guacamole|chips|chapelure|cornichon|capres/;
+var R_NUT=/graines|\bnoix\b|noisette|cajou|pistache|cacahuete|amande|\bpignons|tahini|chataigne|pecan|macadamia|noix de coco/;
+var R_LEGUME=/tofu|tempeh|seitan|edamame|falafel|houmous|mycoproteine|steak vegetal|proteines de soja|lentille|pois chiche|haricots (blancs|rouges|noirs)|\bfeves\b|pois casses|petits pois/;
+var R_MEAT=/poulet|boeuf|steak|porc|jambon|dinde|veau|agneau|saucisse|saucisson|merguez|lardon|bacon|boudin|pate de campagne|rillettes|salami|chorizo|bresaola|grisons|cotelette|entrecote|\bboulettes?\b|lapin|canard|chevreuil|foie|aile de|pilon|\broti\b/;
+var R_FISH=/saumon|thon|cabillaud|crevette|sardine|truite|maquereau|colin|\bsole\b|dorade|\bbar\b|haddock|hareng|anchois|moule|surimi|calamar|poulpe|saint-jacques|huitre|crabe|homard|poisson/;
+var R_DAIRY=/\blait\b|yaourt|yogourt|fromage|skyr|emmental|mozzarella|feta|parmesan|cottage|beurre|creme|brie|camembert|gouda|ricotta|mascarpone|\bedam\b|maasdam|gruyere|comte|cheddar|roquefort|gorgonzola|boursin|raclette|halloumi|burrata|reblochon|maroilles|herve|kefir|babeurre|quark|faisselle|petit-suisse|ghee/;
+var R_GRAIN=/\bpain\b|baguette|biscotte|galette de riz|\briz\b|\bpates?\b|pomme de terre|pommes de terre|patate|puree|quinoa|couscous|boulgour|polenta|gnocchi|nouille|muesli|granola|cereale|corn flakes|cracker|flocon|farine|semoule|orge|epeautre|sarrasin|millet|vermicelle|pita|naan|tortilla|porridge|frites|bagel|pop-corn|croquettes de pommes/;
+var R_FRUIT=/banane|\bpomme\b|orange|fraise|raisin|citron|clementine|mandarine|kiwi|\bpoires?\b|peche|nectarine|abricot|prune|cerise|myrtille|framboise|ananas|mangue|melon|pasteque|figue|datte|\bmures?\b|groseille|cassis|cranberr|litchi|grenade|papaye|fruit de la passion|goyave|physalis|rhubarbe|kaki|plantain|pruneau|pamplemousse|pomelo|avocat/;
+var R_VEG=/tomate|carotte|brocoli|salade|courgette|haricots verts|epinard|champignon|\bmais\b|oignon|poivron|concombre|\bail\b|poireau|chou|aubergine|celeri|betterave|radis|asperge|navet|courge|potiron|fenouil|endive|roquette|mache|gingembre|persil|basilic|artichaut|kale|pak choi|shiitake|pleurote|blette|cresson|laitue|iceberg|mesclun|panais|topinambour|manioc|igname|piment|echalote|ciboulette|coriandre|menthe|aneth|pousses|olives/;
+var R_OMNI_OTHER=/thon|saumon|poulet|jambon|viande|boeuf|porc|crevette|sardine|saucisse|lardon|salami|bolognaise|carbonara|waterzooi|carbonnade|bourguignon|boulets|poisson|miso|filet americain|nuggets|fricadelle|kebab|^burger|hot-dog|vol-au-vent|saindoux|bouillon|bonbons|sushi|blanquette|basquaise|royal|paella|\bnem\b|rouleau|riz cantonais|burrito|taco|salade (nicoise|cesar)|hachis|chicons|croque|panini|lasagne|quiche|wrap|pad thai|pizza (jambon|salami)|(sandwich|croissant) (au|jambon)/;
+var R_VEG_FIRST=/tarte|pain d.epices|cafe au lait|caprese|cappuccino|latte/;
+var R_VEGAN_OTHER=/ketchup|bretzel|pain a hamburger|croquettes de pommes|huile|vinaigre|moutarde|sauce (barbecue|teriyaki|piquante|soja|tomate)|sirop|\bsucre\b|confiture|compote|\bjus\b|soda|limonade|\bcafe noir|espresso|\bthe\b|kombucha|\beau\b|boisson (energisante|de l.effort)|lait (de soja|d.amande|d.avoine|de riz|de coco)|alcool|sorbet|epices|levure|cacao|fecule|maizena|pate a pizza|chapelure|concentre|chili sin carne|curry de legumes|taboule|ratatouille|guacamole|chips|cornichon|capres/;
+var R_VEG_OTHER=/\bmiel\b|mayonnaise|\boeuf|pizza (margherita|quatre fromages)|croissant|brioche|cramique|pistolet|petit pain|pain au chocolat|pain aux raisins|chausson|eclair|mille-feuille|macaron|beignet|muffin|brownie|petit-beurre|biscuit|cookie|madeleine|speculoos|gaufre|pain d.epices|gateau|tarte|tiramisu|\bmousse|pudding|creme|riz au lait|glace|milkshake|chocolat|praline|truffe|barre|pate a tartiner|pate (brisee|feuilletee)|pate d.amande|crepe|pancake|bechamel|sauce (tartare|samourai|andalouse|cesar|carbonara)|pesto|vinaigrette|margarine|biere|\bvin\b|cidre|champagne|porto|liqueur|soupe (de tomates|de legumes|poireaux)|veloute|risotto|gratin dauphinois|stoemp|salade (de pates|caprese|de pommes)|coleslaw|omelette|smoothie|lait chocolate|poudre de proteines/;
+var R_LIMIT=[
+  ['Alcool',/biere|\bvin\b|cidre|champagne|porto|alcool|liqueur/],
+  ['Boisson sucrée',/soda|limonade|\bjus\b|energisante|sirop (de|d.agave)|lait chocolate|smoothie|the glace|milkshake/],
+  ['Très sucré',/bonbon|chocolat au lait|chocolat blanc|barre chocolatee|praline|truffe|speculoos|gaufre|beignet|macaron|eclair|mille-feuille|tarte|gateau|brownie|muffin|cookie|madeleine|biscuits?(?!s? aperitif)(?! aperitif)|sirop d.erable|petit-beurre|pain au chocolat|chausson|glace|pate a tartiner|creme brulee|\bmousse|tiramisu|\bsucre\b|gaufrette/],
+  ['Charcuterie (gras, sel)',/saucisson|salami|chorizo|rillettes|pate de campagne|lardon|bacon|boudin|saucisse|merguez/],
+  ['Frit ou très transformé',/^frites$|chips|nuggets|fricadelle|hot-dog|^burger|poisson pane|\bnem\b|croquettes de pommes|kebab/],
+  ['Sauce ou graisse concentrée',/saindoux|mayonnaise|sauce (tartare|samourai|andalouse|cesar)/]
+];
+var R_SRC={
+  fer:/lentille|pois chiche|haricots (blancs|rouges|noirs)|\bfeves\b|pois casses|tofu|tempeh|seitan|epinard|blette|boudin|foie|moule|huitre|sardine|boeuf|steak|entrecote|agneau|chevreuil|graines de courge|cacao|quinoa|grisons|proteines de soja|persil/,
+  calcium:/\blait (demi|entier|ecreme)|yaourt|fromage|skyr|emmental|mozzarella|feta|parmesan|cottage|brie|camembert|gouda|ricotta|\bedam\b|maasdam|gruyere|comte|cheddar|roquefort|gorgonzola|raclette|halloumi|burrata|reblochon|maroilles|herve|kefir|babeurre|quark|faisselle|petit-suisse|sardine|amande|graines de chia|figues seches|kale|tahini/,
+  vitc:/kiwi|citron|orange|clementine|mandarine|pamplemousse|pomelo|fraise|framboise|cassis|groseille|poivron|brocoli|chou|persil|papaye|goyave|litchi|cresson|piment|physalis|fruit de la passion/,
+  omega3:/saumon|sardine|maquereau|hareng|truite|anchois|thon frais|^noix$|graines de lin|graines de chia|huile de colza/,
+  vitd:/saumon|sardine|maquereau|hareng|truite|thon|anchois|^oeuf|jaune d.oeuf|foie/,
+  b12:/foie|moule|huitre|sardine|saumon|truite|maquereau|hareng|thon|anchois|boeuf|steak|entrecote|agneau|veau|^oeuf|skyr|yaourt|\blait (demi|entier|ecreme)|fromage blanc|cottage|crabe|homard|haddock/
+};
+var R_SEASON=[
+  [/^pomme$/,'8-3'],[/^poire$/,'8-2'],[/^fraises$/,'5-8'],[/^framboises/,'6-9'],[/^myrtilles/,'7-9'],[/^mures/,'8-9'],[/^groseilles/,'6-8'],[/^cassis/,'7-8'],[/^cerises$/,'6-8'],
+  [/^prune$/,'8-10'],[/^abricot$/,'6-8'],[/^peche$|^nectarine/,'7-9'],[/^melon/,'6-9'],[/^pasteque/,'7-8'],[/^raisin$/,'8-10'],[/^figue fraiche/,'8-10'],[/^rhubarbe/,'4-6'],
+  [/^(orange|orange sanguine|clementine|mandarine|citron|citron vert|pamplemousse|pomelo)$/,'11-3'],
+  [/^tomate$|^tomates cerises/,'6-9'],[/^courgette/,'6-9'],[/^aubergine/,'7-9'],[/^poivron$/,'7-9'],[/^concombre/,'6-9'],[/^haricots verts/,'6-9'],[/^petits pois/,'5-7'],[/^asperges/,'4-6'],
+  [/^epinards/,'3-6,9-11'],[/^brocoli/,'6-11'],[/^chou-fleur/,'6-11'],[/^chou (rouge|blanc)/,'9-3'],[/^choux de bruxelles/,'10-2'],[/^poireau/,'9-4'],[/^celeri-rave/,'9-3'],[/^celeri branche/,'6-10'],
+  [/^betterave/,'6-3'],[/^radis/,'4-10'],[/^navet/,'10-3'],[/^panais/,'10-3'],[/^(potiron|courge butternut)/,'9-12'],[/^fenouil/,'6-10'],[/^endive/,'10-4'],[/^(salade verte|salade iceberg|laitue|roquette|mesclun)/,'4-10'],
+  [/^mache/,'10-3'],[/^carotte/,'6-3'],[/^oignon|^echalote/,'7-3'],[/^ail$/,'6-12'],[/^pommes de terre (cuites|crues|sautees|au four)/,'6-3'],[/^topinambour/,'10-3'],[/^artichaut/,'6-9'],[/^blettes/,'6-10'],
+  [/^chou frise/,'10-2'],[/^pak choi/,'5-10'],[/^chou-rave/,'5-10'],[/^mais doux/,'7-9'],[/^(persil|basilic|ciboulette|aneth|menthe|coriandre)/,'5-10'],[/^cresson/,'4-10']
+];
+function monthsOf(spec){
+  var out=[];
+  spec.split(',').forEach(function(r){
+    var a=r.split('-'), s=Number(a[0]), e=Number(a[1]), m=s, guard=0;
+    while(guard++<13){out.push(m);if(m===e)break;m=m%12+1}
+  });
+  return out;
+}
+function monthsLabel(ms){
+  if(ms.length>=12)return 'toute l’année';
+  var runs=[], cur=[ms[0]], i;
+  for(i=1;i<ms.length;i++){if(ms[i]===ms[i-1]%12+1)cur.push(ms[i]);else{runs.push(cur);cur=[ms[i]]}}
+  runs.push(cur);
+  return runs.map(function(r){return r.length===1?MONTHS[r[0]-1]:MONTHS[r[0]-1]+' à '+MONTHS[r[r.length-1]-1]}).join(', ');
+}
+var FI=[];
+function finfo(i){
+  if(FI[i])return FI[i];
+  var f=FOODS[i], n=norm(f[0]).trim(), type, diet, src=[], limit='', months=null;
+  if(R_OTHER.test(n))type='other';
+  else if(R_NUT.test(n))type='nut';
+  else if(R_LEGUME.test(n))type='legume';
+  else if(/\boeuf/.test(n))type='egg';
+  else if(R_DAIRY.test(n))type='dairy';
+  else if(R_MEAT.test(n))type='meat';
+  else if(R_FISH.test(n))type='fish';
+  else if(R_GRAIN.test(n))type='grain';
+  else if(R_FRUIT.test(n))type='fruit';
+  else if(R_VEG.test(n))type='veg';
+  else type='other';
+  if(type==='meat'||type==='fish')diet='omni';
+  else if(type==='egg'||type==='dairy')diet=/au soja/.test(n)?'vegan':'veg';
+  else if(type==='other')diet=R_OMNI_OTHER.test(n)?'omni':R_VEG_FIRST.test(n)?'veg':R_VEGAN_OTHER.test(n)?'vegan':R_VEG_OTHER.test(n)?'veg':'omni';
+  else if(type==='legume')diet=/mycoproteine|steak vegetal/.test(n)?'veg':'vegan';
+  else if(type==='grain')diet=/gnocchi|nouille|pain de mie|croquettes|puree|cracker|granola|bagel/.test(n)?'veg':'vegan';
+  else diet='vegan';
+  Object.keys(R_SRC).forEach(function(k){
+    if(k==='vitd'&&/blanc d.oeuf/.test(n))return;
+    if(k==='b12'&&/blanc d.oeuf/.test(n))return;
+    if(R_SRC[k].test(n))src.push(k);
+  });
+  if(!/sans sucre|non sucre/.test(n))R_LIMIT.some(function(r){if(r[1].test(n)){limit=r[0];return true}return false});
+  if(type==='fruit'||type==='veg')R_SEASON.some(function(r){if(r[0].test(n)){months=monthsOf(r[1]);return true}return false});
+  var p100=f[2], pp=f[2]*f[5]/100, kp=f[1]*f[5]/100;
+  FI[i]={type:type,diet:diet,src:src,limit:limit,months:months,p100:p100,pp:pp,kp:kp,dens:f[1]>=20?f[2]/f[1]*100:null};
+  return FI[i];
+}
+function inSeason(months,key){
+  var set=key==='now'?[parseKey(TODAY).getMonth()+1]:SEASON_M[key];
+  return months.some(function(m){return set.indexOf(m)>=0});
+}
+function ftRest(){var g=S.profile, t=totals(mealsFor(ui.sel));return {p:g.p-t.p,k:g.kcal-t.kcal,day:ui.sel}}
+function pf(x){return x>=10?nf(x):nfu(x)}
+function ftList(){
+  var rest=ftRest(), q=norm(FT.q||'').trim(), q2=q.length>3&&/s$/.test(q)?q.slice(0,-1):q, out=[];
+  FOODS.forEach(function(f,i){
+    var I=finfo(i);
+    if(q){var nn=norm(f[0]);if(nn.indexOf(q)<0&&nn.indexOf(q2)<0)return}
+    if(FT.type!=='all'&&I.type!==FT.type)return;
+    if(FT.diet==='veg'&&I.diet==='omni')return;
+    if(FT.diet==='vegan'&&I.diet!=='vegan')return;
+    if(FT.src&&I.src.indexOf(FT.src)<0)return;
+    if(FT.season&&!(I.months&&inSeason(I.months,FT.season)))return;
+    if(FT.hide&&I.limit)return;
+    if(FT.rich&&I.p100<10)return;
+    if(FT.fit&&!(rest.k>0&&I.kp<=rest.k&&I.pp>=5))return;
+    out.push(i);
+  });
+  var key=FT.sort;
+  out.sort(function(a,b){
+    var va=finfo(a)[key], vb=finfo(b)[key];
+    if(va===null)va=-Infinity;if(vb===null)vb=-Infinity;
+    if(va!==vb)return (va<vb?-1:1)*FT.dir;
+    return FOODS[a][0].localeCompare(FOODS[b][0],'fr');
+  });
+  return out;
+}
+function dietLbl(d){return d==='vegan'?'Végan':d==='veg'?'Végétarien':''}
+function ftDetail(i){
+  var f=FOODS[i], I=finfo(i), rest=ftRest(), d=unitOf(f[0]), out='';
+  out+='<div class="ft-tags"><span class="tg">'+esc(FT_TYPE_LBL[I.type])+'</span>'+(dietLbl(I.diet)?'<span class="tg">'+dietLbl(I.diet)+'</span>':'<span class="tg">Contient viande ou poisson</span>')+(I.limit?'<span class="tg warn">À limiter : '+esc(I.limit)+'</span>':'')+'</div>';
+  out+='<p class="num">Pour 100 g : '+nf(f[1])+' kcal · P '+pf(f[2])+' g · G '+pf(f[3])+' g · L '+pf(f[4])+' g</p>';
+  out+='<p class="num">Portion de '+nf(f[5])+' g'+(d&&f[5]>=d.g*0.9?' (≈ '+fmtUnits(f[5]/d.g,f[0],true)+')':'')+' : '+nf(I.kp)+' kcal · P '+pf(I.pp)+' g</p>';
+  if(I.src.length)out+='<p>Bonne source de : '+I.src.map(function(k){return FT_SRC.filter(function(s){return s[0]===k})[0][1]}).join(', ')+'.'+(I.src.indexOf('fer')>=0&&(I.diet==='vegan')?' Le fer végétal est mieux absorbé avec un aliment riche en vitamine C.':'')+'</p>';
+  if(I.months)out+='<p>Saison en Belgique : '+esc(monthsLabel(I.months))+'.</p>';
+  else if(I.type==='fruit'||I.type==='veg')out+='<p>Produit surtout importé ou disponible toute l’année.</p>';
+  var g=0, add='';
+  if(rest.p>0&&f[2]>=3){
+    g=Math.ceil(rest.p/(f[2]/100)/5)*5;
+    if(g<=600){out+='<p class="num">Pour combler vos '+nf(rest.p)+' g de protéines restantes : '+nf(g)+' g, soit '+nf(f[1]*g/100)+' kcal'+(rest.k>0&&f[1]*g/100>rest.k?' (plus que vos calories restantes)':'')+'.</p>';add='<button class="btn" data-act="ft-add" data-i="'+i+'" data-g="'+g+'">Ajouter '+nf(g)+' g au journal</button>'}
+    else out+='<p>Il en faudrait plus de 600 g pour combler le reste : associez-le à un aliment plus riche.</p>';
+  }
+  out+='<div class="row2" style="margin-top:8px">'+add+'<button class="btn alt" data-act="ft-add" data-i="'+i+'" data-g="'+f[5]+'">'+(add?'Ajouter la portion':'Ajouter au journal')+'</button></div>';
+  return out;
+}
+function ftTable(){
+  var list=ftList(), shown=list.slice(0,FT.n);
+  var th=function(k,l){var on=FT.sort===k;return '<th scope="col" class="num" aria-sort="'+(on?(FT.dir<0?'descending':'ascending'):'none')+'"><button class="ft-th" data-act="ft-sort" data-v="'+k+'">'+l+(on?(FT.dir<0?' ↓':' ↑'):'')+'</button></th>'};
+  if(!list.length)return '<div class="empty" style="border:0"><p>Aucun aliment ne correspond à ces filtres.'+(FT.fit&&ftRest().k<=0?' Vous n’avez plus de calories disponibles pour ce jour.':'')+'</p><button class="btn alt" data-act="ft-reset">Réinitialiser les filtres</button></div>';
+  var rows=shown.map(function(i){
+    var f=FOODS[i], I=finfo(i), open=FT.open===i;
+    return '<tr><th scope="row"><button class="ft-nm" data-act="ft-open" data-i="'+i+'" aria-expanded="'+open+'">'+esc(f[0])+'</button><div class="ft-sub num">'+nf(f[5])+' g · '+nf(I.kp)+' kcal'+(I.diet==='vegan'?' · Végan':I.diet==='veg'?' · Végé':'')+(I.limit?' · à limiter':'')+'</div></th>'+
+      '<td class="num">'+pf(I.p100)+'</td><td class="num"><b>'+pf(I.pp)+'</b></td><td class="num">'+(I.dens===null?'–':pf(I.dens))+'</td></tr>'+(open?'<tr class="ft-d"><td colspan="4">'+ftDetail(i)+'</td></tr>':'');
+  }).join('');
+  return '<table class="ft-t"><thead><tr><th scope="col">Aliment</th>'+th('p100','P / 100 g')+th('pp','P / portion')+th('dens','P / 100 kcal')+'</tr></thead><tbody>'+rows+'</tbody></table>'+
+    (list.length>FT.n?'<button class="btn alt block" style="margin-top:10px" data-act="ft-more">Afficher plus ('+(list.length-FT.n)+' restants)</button>':'');
+}
+function ftHead(){var r=$('#ft-res');if(r)r.innerHTML=ftTable()}
+function ftCount(){var n=ftList().length;return n+' aliment'+(n>1?'s':'')}
+function ftRefresh(){var r=$('#ft-res');if(r)r.innerHTML=ftTable();var c=$('#ft-count');if(c)c.textContent=ftCount()}
+function ftActive(){return (FT.type!=='all'?1:0)+(FT.diet!=='all'?1:0)+(FT.src?1:0)+(FT.season?1:0)+(FT.hide?1:0)+(FT.rich?1:0)+(FT.fit?1:0)}
+function foodsHtml(){
+  var r=ftRest(), when=r.day===TODAY?'aujourd’hui':'le '+fmtShort.format(parseKey(r.day)).replace('.',''), banner;
+  if(r.p<=0)banner='<div class="ft-sum ok"><b>Objectif protéines atteint '+esc(when)+'</b><span class="num">'+nf(-r.p)+' g en plus · '+(r.k>=0?nf(r.k)+' kcal restantes':nf(-r.k)+' kcal en trop')+'</span></div>';
+  else banner='<div class="ft-sum"><b>Il vous reste '+nf(r.p)+' g de protéines '+esc(when)+'</b><span class="num">'+(r.k>0?nf(r.k)+' kcal restantes. Visez plus de '+nf(r.p/r.k*100)+' g de protéines pour 100 kcal.':'Plus de calories disponibles : choisissez les aliments les plus denses en protéines.')+'</span></div>';
+  var chip=function(act,k,v,l,on,extra){return '<button class="chip" data-act="'+act+'" data-k="'+k+'" data-v="'+v+'" aria-pressed="'+on+'">'+l+'</button>'};
+  var filters='';
+  if(FT.fopen){
+    filters='<div class="ft-f"><div class="eyebrow">Régime</div><div class="chips">'+[['all','Tous'],['veg','Végétarien'],['vegan','Végan']].map(function(x){return chip('ft-set','diet',x[0],x[1],FT.diet===x[0])}).join('')+'</div></div>'+
+      '<div class="ft-f"><div class="eyebrow">Saison, fruits et légumes de Belgique</div><div class="chips">'+FT_SEASONS.map(function(x){return chip('ft-tog1','season',x[0],x[1],FT.season===x[0])}).join('')+'</div></div>'+
+      '<div class="ft-f"><div class="eyebrow">Bonne source de</div><div class="chips">'+FT_SRC.map(function(x){return chip('ft-tog1','src',x[0],x[1],FT.src===x[0])}).join('')+'</div>'+
+      (FT.src==='b12'&&FT.diet==='vegan'?'<p class="note" style="margin-top:6px">Aucun aliment végétal n’apporte de vitamine B12 : en alimentation végane, parlez-en à un médecin ou un diététicien.</p>':'<p class="note" style="margin-top:6px">Repères qualitatifs, pas des apports chiffrés.</p>')+'</div>'+
+      '<div class="ft-f"><div class="eyebrow">Autres filtres</div><div class="chips">'+
+      '<button class="chip" data-act="ft-tog" data-k="rich" aria-pressed="'+FT.rich+'">Riches en protéines</button>'+
+      '<button class="chip" data-act="ft-tog" data-k="fit" aria-pressed="'+FT.fit+'">Dans mon reste de calories</button>'+
+      '<button class="chip" data-act="ft-tog" data-k="hide" aria-pressed="'+FT.hide+'">Masquer ceux à limiter</button></div></div>';
+  }
+  return banner+
+    '<label class="f" for="ft-q" style="margin-top:12px">Chercher un aliment<input class="in" id="ft-q" type="search" data-bind="ft-q" placeholder="Ex. skyr, lentilles, saumon" autocomplete="off" value="'+esc(FT.q)+'"></label>'+
+    '<div class="ft-f"><div class="eyebrow">Type</div><div class="chips">'+FT_TYPES.map(function(x){return chip('ft-set','type',x[0],x[1],FT.type===x[0])}).join('')+'</div></div>'+
+    '<div class="row2" style="margin:10px 0"><button class="btn alt" data-act="ft-fopen" aria-expanded="'+FT.fopen+'">'+(FT.fopen?'Masquer les filtres':'Plus de filtres'+(ftActive()?' ('+ftActive()+')':''))+'</button>'+(ftActive()||FT.q?'<button class="link" data-act="ft-reset">Réinitialiser</button>':'')+'</div>'+filters+
+    '<div class="sec-h"><h2>Aliments</h2><span class="eyebrow" id="ft-count">'+ftCount()+'</span></div>'+
+    '<div id="ft-res">'+ftTable()+'</div>'+
+    '<p class="hint" style="margin-top:12px">P = protéines en grammes. Valeurs moyennes, aliments cuits quand c’est précisé. Régime, saison et sources de nutriments sont des repères déduits du nom de l’aliment : vérifiez les étiquettes pour les produits transformés. « À limiter » dépend de votre objectif et des quantités, ce n’est pas un interdit.</p>';
+}
+
 /* ---------- toast ---------- */
 var toastT=null;
 function toast(msg,undo){
@@ -1513,6 +1699,16 @@ document.addEventListener('click',function(e){
   else if(a==='save-manual')saveManual();
   else if(a==='err-back'){add.step=add.errBack||(add.file?'photo':'text');renderSheet()}
   else if(a==='mview'){ui.mview=v;render()}
+  else if(a==='ft-ideas'){ui.tab='menu';ui.mview='foods';FT.sort='pp';FT.dir=-1;render();window.scrollTo(0,0)}
+  else if(a==='ft-sort'){if(FT.sort===v)FT.dir=-FT.dir;else{FT.sort=v;FT.dir=-1}FT.n=60;ftRefresh();ftHead()}
+  else if(a==='ft-set'){FT[b.dataset.k]=v;FT.n=60;FT.open=-1;render()}
+  else if(a==='ft-tog1'){FT[b.dataset.k]=FT[b.dataset.k]===v?'':v;FT.n=60;FT.open=-1;render()}
+  else if(a==='ft-tog'){FT[b.dataset.k]=!FT[b.dataset.k];FT.n=60;FT.open=-1;render()}
+  else if(a==='ft-fopen'){FT.fopen=!FT.fopen;render()}
+  else if(a==='ft-reset'){FT.q='';FT.type='all';FT.diet='all';FT.src='';FT.season='';FT.hide=false;FT.rich=false;FT.fit=false;FT.n=60;FT.open=-1;render()}
+  else if(a==='ft-more'){FT.n+=60;ftRefresh()}
+  else if(a==='ft-open'){var oi=Number(b.dataset.i);FT.open=FT.open===oi?-1:oi;ftRefresh()}
+  else if(a==='ft-add'){var ai=Number(b.dataset.i);newAdd('search',{basket:[{f:ai,g:Number(b.dataset.g)}]})}
   else if(a==='wk'){ui.week=dkey(addDays(parseKey(ui.week),7*Number(v)));render()}
   else if(a==='rf'){ui.rf=v;render()}
   else if(a==='ropen')newAdd('rdetail',{rid:b.dataset.id,rscale:1,rday:TODAY,time:nowT()});
@@ -1569,6 +1765,7 @@ document.addEventListener('click',function(e){
 document.addEventListener('input',function(e){
   var t=e.target, bind=t.dataset&&t.dataset.bind;
   if(!bind)return;
+  if(bind==='ft-q'){FT.q=t.value;FT.n=60;FT.open=-1;ftRefresh();return}
   if(bind==='rq'){ui.rq=t.value;var rl=$('#r-list');if(rl)rl.innerHTML=recipeRows();var rc=$('#r-count');if(rc)rc.textContent=recipeCount();return}
   if(!add)return;
   if(bind.indexOf('me-')===0&&add.me){meInput(bind.slice(3),t);return}
