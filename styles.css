@@ -271,3 +271,28 @@ html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 .ft-t tbody th{width:auto;overflow-wrap:anywhere}
 .ft-th{text-align:right;width:100%}
 .ft-t td{padding-left:2px;padding-right:6px}
+
+/* ---- eau ---- */
+.water{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 12px;display:flex;flex-direction:column;gap:8px}
+.water-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.water-h span{color:var(--muted);font-size:14px}
+.wbar{height:10px;border-radius:5px}
+.wbar i{background:var(--p)}
+.water-s{font-size:13px;color:var(--muted)}
+.water-b{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.water-b .btn{padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:0;line-height:1.2;min-width:0}
+.water-b .btn small{font-size:11px;font-weight:500;color:var(--muted)}
+/* ---- frigo ---- */
+.fthumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fth{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.fth img{width:100%;height:100%;object-fit:cover;display:block}
+.fth .x{position:absolute;top:4px;right:4px;background:var(--surface);border-radius:999px;width:32px;height:32px}
+.fr-list{display:flex;flex-direction:column;gap:8px}
+.fr-row{display:grid;grid-template-columns:minmax(0,1fr) 78px 36px 36px;gap:6px;align-items:center}
+.fr-row .in{min-width:0;padding:8px 10px}
+.fr-row .star{background:none;border:0;font-size:22px;line-height:1;color:var(--c);min-height:36px}
+.fr-row .x{width:36px;height:36px}
+.fr-add{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.fr-card{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--bg);display:flex;flex-direction:column;gap:6px}
+.fr-card>b{font:700 17px/1.2 var(--display)}
+.fr-card p{margin:0}
