@@ -296,3 +296,13 @@ html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
 .fr-card{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--bg);display:flex;flex-direction:column;gap:6px}
 .fr-card>b{font:700 17px/1.2 var(--display)}
 .fr-card p{margin:0}
+
+/* ---- version végétarienne, adaptation ---- */
+.ment .vg{font-size:12px;color:var(--muted);margin-top:3px}
+.ad-card{border:1px solid var(--p);border-radius:14px;padding:12px 14px;background:var(--bg);display:flex;flex-direction:column;gap:10px}
+.ad-row{display:flex;flex-direction:column;gap:3px;padding-top:8px;border-top:1px solid var(--line)}
+.ad-bef{font-size:13px;color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line)}
+.ad-aft{display:flex;flex-direction:column}
+.ad-aft b{font:700 16px/1.25 var(--display)}
+.ad-aft span{font-size:13px}
+.ad-card .note{margin:0}
